@@ -9,11 +9,11 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
  */
 public class CallerTest {
     public static void main(String[] args) {
-        ConfigurableApplicationContext context = new ClassPathXmlApplicationContext(new String[] {"src/test/resources/spring/applicationContext.xml"});
+        ConfigurableApplicationContext context = new ClassPathXmlApplicationContext(new String[] {"classpath*:/spring/applicationContext.xml"});
 
         Reporter reporter = (Reporter)context.getBean("reporter");
 
-        System.out.println(reporter);
+        System.out.println(reporter.getExecutor().toString());
 
         context.close();
     }

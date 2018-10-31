@@ -35,7 +35,7 @@ public class RedisConsumer implements Runnable {
         LOGGER.info("Running ");
         Config config = new Config();
         config.useSingleServer()
-                .setAddress(properties.getProperty(Constants.REDIS_ADDR))
+                .setAddress("redis://" + properties.getProperty(Constants.REDIS_ADDR))
                 .setConnectionPoolSize(Integer.parseInt(properties.getProperty(Constants.REDIS_CLIENT_POOL_SIZE)))
                 .setConnectionMinimumIdleSize(Integer.parseInt(properties.getProperty(Constants.REDIS_CLIENT_MIN_IDLE_SIZE)));
         RedissonClient client = Redisson.create(config);

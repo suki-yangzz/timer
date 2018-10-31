@@ -5,6 +5,10 @@ package net.susss.timer.sdk;
  */
 public class Constants {
 
+    public static final String ESCAPE_BUCKET = "%";
+
+    public static final String ESCAPE_STARTTIME = "_";
+
     public static final String DEFAULT_REDIS_HOST = "127.0.0.1";
 
     public static final String DEFAULT_REDIS_PORT = "6379";

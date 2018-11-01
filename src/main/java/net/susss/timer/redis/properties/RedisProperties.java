@@ -1,4 +1,4 @@
-package net.susss.timer.redis;
+package net.susss.timer.redis.properties;
 
 import lombok.Data;
 import lombok.ToString;

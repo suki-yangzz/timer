@@ -1,196 +1,77 @@
 package net.susss.timer.sdk;
 
-import com.sun.tools.javac.util.ArrayUtils;
-import com.sun.xml.internal.ws.encoding.soap.SerializationException;
 import lombok.Data;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.util.ClassUtils;
-import org.springframework.util.SerializationUtils;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
+import lombok.ToString;
+import net.susss.timer.redis.RedisClient;
+import org.apache.commons.lang3.StringUtils;
+import org.redisson.api.RDelayedQueue;
+import org.redisson.api.RScoredSortedSet;
+import org.redisson.api.RedissonClient;
 
-import javax.xml.ws.Response;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import javax.annotation.PostConstruct;
+import java.util.concurrent.TimeUnit;
 
-/**
- * Created by Suki Yang on 10/24/2018.
- */
 @Data
+@ToString
 public class TimerApi implements Timer {
 
-    /**
-     * logger of slf4j
-     */
-    private static final Logger LOGGER = LoggerFactory.getLogger(TimerApi.class);
+    RedissonClient redisson;
 
-    private JedisPool jedisPool;
+    private String address;
 
-    private JedisPoolConfig poolConfig;
-
-    private String             host;
-
-    private int                port        = 6379;
-
-    private String             password;
-
-    private int                timeout     = 20000;
-
-    private ThreadLocal<Jedis> JEDIS_LOCAL = new ThreadLocal<Jedis>();
-
-    private final String       ENCODING    = "UTF-8";
+    private String password;
 
     private int database = 0;
 
-    private static final int PIPE_LIMIT = 5000;
+    private int timeout = 20000;
 
-    @Override
+    private String mode;
+
+    private int poolSize;
+
+    private int poolMinIdleSize;
+
+    @PostConstruct
     public void init() {
-        poolConfig.setTestOnBorrow(true);
-        jedisPool = new JedisPool(poolConfig, host, port, timeout, password, database);
-    }
-
-
-    private Jedis get() {
-        final Jedis jedis = jedisPool.getResource();
-        JEDIS_LOCAL.set(jedis);
-        return jedis;
-    }
-
-    private String getKey(CacheEnum cache, String suffixKey) {
-        return cache.getCode() + suffixKey;
-    }
-
-    private void close() {
-        if (null != JEDIS_LOCAL.get()) {
-            JEDIS_LOCAL.get().close();
+        if (StringUtils.isBlank(mode)) {
+            mode = Constants.REDIS_MODE_SINGLE;
+        }
+        switch (mode) {
+            case Constants.REDIS_MODE_SINGLE:
+                redisson = new RedisClient().redissonSingle(address, timeout, poolSize, poolMinIdleSize, password);
         }
     }
 
     @Override
-    public void putWithExpire(CacheEnum cache, Serializable value, int expire) {
-        putWithExpire(cache.getCode(), value, expire);
-    }
-
-    private void putWithExpire(String key, Serializable value, int expire) {
-
-
+    public void set(String key, String value, long startTime, TimeUnit timeUnit, long timeout) {
         try {
-            final Jedis jedis = get();
-            if (isSimpleObject(value)) {
-                jedis.set(key, String.valueOf(value));
-            } else {
-                jedis.set(key.getBytes(ENCODING), SerializationUtils.serialize(value));
-            }
-            if (expire > 0) {
-                jedis.expire(key, expire);
-            }
+            String bucket = String.valueOf(TimeUnit.MILLISECONDS.convert(timeout, timeUnit));
+            String setValue = startTime + Constants.ESCAPE_STARTTIME + key;
+            RScoredSortedSet set = redisson.getScoredSortedSet(bucket);
+            set.add(startTime, setValue);
+            RDelayedQueue<String> delayedQueue = redisson.getDelayedQueue(redisson.getBlockingQueue(Constants.DELAY_QUEUE));
+            delayedQueue.offer(timeout + Constants.ESCAPE_BUCKET + startTime + Constants.ESCAPE_STARTTIME + key, timeout, timeUnit);
         } catch (Exception e) {
-
-        } finally {
-            close();
+            e.printStackTrace();
         }
+//            TODO: close or not
+//        } finally {
+//            if (null != delayedQueue) delayedQueue.destroy();
+//            redisson.shutdown();
+//        }
     }
 
     @Override
-    public <T> T get(CacheEnum cache) {
-        return get(cache.getCode());
-    }
-
-    @SuppressWarnings("unchecked")
-    private <T> T get(String key) {
-
+    public void unset(String key, long startTime, TimeUnit timeUnit, long timeout) {
         try {
-            final Jedis jedis = get();
-
-            final byte[] datas = jedis.get(key.getBytes(ENCODING));
-            if (null==datas) {
-                return null;
-            }
-            return (T) SerializationUtils.deserialize(datas);
-        } catch (SerializationException se) {
-            return (T) getString(key);
+            String bucket = String.valueOf(TimeUnit.MILLISECONDS.convert(timeout, timeUnit));
+            String setValue = startTime + Constants.ESCAPE_BUCKET + key;
+            RScoredSortedSet set = redisson.getScoredSortedSet(bucket);
+            RDelayedQueue<String> delayedQueue = redisson.getDelayedQueue(redisson.getBlockingQueue(Constants.DELAY_QUEUE));
+            set.remove(setValue);
+            delayedQueue.offer(startTime + Constants.ESCAPE_STARTTIME + key, timeout, timeUnit);
         } catch (Exception e) {
-
-        } finally {
-            close();
-        }
-        return null;
-    }
-
-    private boolean isSimpleObject(Serializable value) {
-        final Class<?> clazz = value.getClass();
-        return ClassUtils.isPrimitiveOrWrapper(clazz) || clazz.isEnum() || CharSequence.class.isAssignableFrom(clazz) || Number.class.isAssignableFrom(clazz);
-    }
-
-    private String getString(String key) {
-        try {
-            return get().get(key);
-        } catch (Exception e) {
-
-        }
-        return key;
-    }
-
-    @Override
-    public <T> T get(CacheEnum cache, String suffixKey) {
-        return get(getKey(cache, suffixKey));
-    }
-
-    @Override
-    public void remove(CacheEnum cache) {
-        remove(cache.getCode());
-    }
-
-    private void remove(String key) {
-        try {
-            final Jedis jedis = get();
-            jedis.del(key);
-        } catch (Exception e) {
-
-        } finally {
-            close();
+            e.printStackTrace();
         }
     }
-
-    @Override
-    public void remove(CacheEnum cache, String suffixKey) {
-        remove(getKey(cache, suffixKey));
-    }
-
-    /**
-     * Key-Value Pair
-     *
-     * @author RobertJ
-     */
-    public static class Pair{
-        private String key;
-        private String value;
-
-        public Pair(String key, String value){
-            this.key = key;
-            this.value = value;
-        }
-
-        public String getKey() {
-            return key;
-        }
-
-        public void setKey(String key) {
-            this.key = key;
-        }
-
-        public String getValue() {
-            return value;
-        }
-
-        public void setValue(String value) {
-            this.value = value;
-        }
-    }
-
 }

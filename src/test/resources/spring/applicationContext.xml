@@ -9,15 +9,19 @@
 
     <context:annotation-config />
 
-    <bean id="caller" class="net.susss.timer.sdk.TimerApi">
-        <property name="redisAddr" value="127.0.0.1:6379"></property>
-        <property name="clientPoolSize" value="1"></property>
-        <property name="clientIdleSize" value="1"></property>
+    <bean id="timer" class="net.susss.timer.sdk.TimerApi">
+        <property name="address" value="127.0.0.1:6379" />
+        <property name="password" value="" />
+        <property name="database" value="0" />
+        <property name="timeout" value="30000" />
+        <property name="mode" value="single" />
+        <property name="poolSize" value="10" />
+        <property name="poolMinIdleSize" value="8" />
     </bean>
 
-    <bean id="reporter" class="net.susss.timer.sdk.Reporter">
-        <property name="redisAddr" value="127.0.0.1:6379"></property>
-        <property name="clientPoolSize" value="1"></property>
-        <property name="clientIdleSize" value="1"></property>
-    </bean>
+    <!--<bean id="reporter" class="net.susss.timer.sdk.Reporter">-->
+        <!--<property name="redisAddr" value="127.0.0.1:6379"></property>-->
+        <!--<property name="clientPoolSize" value="1"></property>-->
+        <!--<property name="clientIdleSize" value="1"></property>-->
+    <!--</bean>-->
 </beans>

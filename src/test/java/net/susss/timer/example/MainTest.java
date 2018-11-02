@@ -1,6 +1,6 @@
 package net.susss.timer.example;
 
-import net.susss.timer.sdk.Timer;
+import net.susss.timer.api.Timer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
@@ -10,10 +10,10 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by Suki Yang on 11/1/2018.
  */
-public class TimerApiTest {
+public class MainTest {
 
     public static void main(String[] args) {
-        ConfigurableApplicationContext context = new ClassPathXmlApplicationContext(new String[] {"classpath*:/spring/applicationContext.xml"});
+        ConfigurableApplicationContext context = new ClassPathXmlApplicationContext(new String[] {"classpath*:/spring/applicationContext-main.xml"});
 
         Timer timer = (Timer) context.getBean("timer");
 

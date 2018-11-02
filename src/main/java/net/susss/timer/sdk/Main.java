@@ -2,20 +2,22 @@ package net.susss.timer.sdk;
 
 import lombok.Data;
 import lombok.ToString;
-import net.susss.timer.redis.RedisClient;
+import net.susss.timer.api.TiRedissonClient;
+import net.susss.timer.api.Timer;
+import net.susss.timer.common.Constants;
+import net.susss.timer.redisson.TiRedissonBlockingQueue;
+import net.susss.timer.redisson.TiRedissonDelayedQueue;
 import org.apache.commons.lang3.StringUtils;
-import org.redisson.api.RDelayedQueue;
 import org.redisson.api.RScoredSortedSet;
-import org.redisson.api.RedissonClient;
 
 import javax.annotation.PostConstruct;
 import java.util.concurrent.TimeUnit;
 
 @Data
 @ToString
-public class TimerApi implements Timer {
+public class Main implements Timer {
 
-    RedissonClient redisson;
+    TiRedissonClient redisson;
 
     private String address;
 
@@ -49,27 +51,21 @@ public class TimerApi implements Timer {
             String setValue = startTime + Constants.ESCAPE_STARTTIME + key;
             RScoredSortedSet set = redisson.getScoredSortedSet(bucket);
             set.add(startTime, setValue);
-            RDelayedQueue<String> delayedQueue = redisson.getDelayedQueue(redisson.getBlockingQueue(Constants.DELAY_QUEUE));
-            delayedQueue.offer(timeout + Constants.ESCAPE_BUCKET + startTime + Constants.ESCAPE_STARTTIME + key, timeout, timeUnit);
+            TiRedissonBlockingQueue<String> blockingQueue = redisson.getTiBlockingQueue(Constants.DELAY_QUEUE);
+            TiRedissonDelayedQueue<String> delayedQueue = redisson.getTiDelayedQueue(blockingQueue);
+            delayedQueue.offer(bucket + Constants.ESCAPE_BUCKET + startTime + Constants.ESCAPE_STARTTIME + key, timeout, timeUnit);
         } catch (Exception e) {
             e.printStackTrace();
         }
-//            TODO: close or not
-//        } finally {
-//            if (null != delayedQueue) delayedQueue.destroy();
-//            redisson.shutdown();
-//        }
     }
 
     @Override
     public void unset(String key, long startTime, TimeUnit timeUnit, long timeout) {
         try {
             String bucket = String.valueOf(TimeUnit.MILLISECONDS.convert(timeout, timeUnit));
-            String setValue = startTime + Constants.ESCAPE_BUCKET + key;
+            String setValue = startTime + Constants.ESCAPE_STARTTIME + key;
             RScoredSortedSet set = redisson.getScoredSortedSet(bucket);
-            RDelayedQueue<String> delayedQueue = redisson.getDelayedQueue(redisson.getBlockingQueue(Constants.DELAY_QUEUE));
             set.remove(setValue);
-            delayedQueue.offer(startTime + Constants.ESCAPE_STARTTIME + key, timeout, timeUnit);
         } catch (Exception e) {
             e.printStackTrace();
         }

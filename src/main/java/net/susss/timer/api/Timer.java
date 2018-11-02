@@ -1,4 +1,4 @@
-package net.susss.timer.sdk;
+package net.susss.timer.api;
 
 import java.util.concurrent.TimeUnit;
 

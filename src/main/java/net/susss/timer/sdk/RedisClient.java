@@ -1,17 +1,13 @@
-package net.susss.timer.redis;
+package net.susss.timer.sdk;
 
 import net.susss.timer.redis.properties.RedisProperties;
+import net.susss.timer.redisson.TiRedisson;
+import net.susss.timer.api.TiRedissonClient;
 import org.apache.commons.lang3.StringUtils;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,7 +21,7 @@ public class RedisClient {
     @Autowired
     RedisProperties redisProperties;
 
-    public RedissonClient redissonSingle(String address, int connTimeout, int poolSize, int poolMinIdleSize, String password) {
+    public TiRedissonClient redissonSingle(String address, int connTimeout, int poolSize, int poolMinIdleSize, String password) {
         Config config = new Config();
         address = address.startsWith("redis://") ? address : "redis://" + address;
         SingleServerConfig serverConfig = config.useSingleServer()
@@ -36,7 +32,7 @@ public class RedisClient {
         if (StringUtils.isNotBlank(password)) {
             serverConfig.setPassword(password);
         }
-        return Redisson.create(config);
+        return TiRedisson.createTiRedissonClient(config);
     }
 
     public RedissonClient redissonCluster() {

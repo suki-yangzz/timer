@@ -13,7 +13,7 @@ public class Constants {
 
     public static final String DELAY_QUEUE = "timer:delay_queue";
 
-    public static final String RELIABLE_QUEUE = "timer:reliable_queue";
+    public static final String TIMEOUT_SET = "timer:timeout_set";
 
     public static final String DEFAULT_REDIS_HOST = "127.0.0.1";
 

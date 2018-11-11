@@ -23,15 +23,25 @@ public class TiRedissonBlockingQueue<V> extends RedissonBlockingQueue<V> {
         super(codec, commandExecutor, name, redisson);
     }
 
-    public RFuture<V> takeAsyncReliably() {
-        System.out.println("take async reliably");
-//        return this.commandExecutor.writeAsync(this.getName(), this.codec, RedisCommands.RPOPLPUSH, this.getName(), Constants.RELIABLE_QUEUE);
-        return this.commandExecutor.evalWriteAsync(this.getName(), this.codec, RedisCommands.EVAL_VOID,
-                "local v = redis.call('SET', 'test_key', 'test_value'); ",
-                Arrays.asList(new Object[]{"test"}));
+    public RFuture<V> checkTimeoutAsync() {
+        return this.commandExecutor.evalWriteAsync(this.getName(), this.codec, RedisCommands.EVAL_OBJECT,
+                "local v = redis.call('rpop', KEYS[1]); " +
+                    "if v ~= false then " +
+                        "local bucket = string.match(v, '(.+)%%'); " +
+                        "local key = string.match(v, '%%(.+)'); " +
+                        "local score = redis.call('zscore', bucket, \"1541926861381_key2\"); " +
+                        "return score; " +
+//                        "if score ~= false then " +
+//                            "local startTime = string.match(v, '%%(.+)_'); " +
+//                            "redis.call('zadd', KEYS[2], startTime, v); " +
+//                            "return v; " +
+//                        "end; " +
+                    "end; " +
+                    "return nil; ",
+                Arrays.<Object>asList(Constants.DELAY_QUEUE, Constants.TIMEOUT_SET));
     }
 
-    public V takeReliably() throws InterruptedException {
-        return this.get(this.takeAsyncReliably());
+    public V checkTimeout() throws InterruptedException {
+        return this.get(this.checkTimeoutAsync());
     }
 }

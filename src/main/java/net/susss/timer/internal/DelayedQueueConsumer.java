@@ -7,10 +7,14 @@ import net.susss.timer.redisson.TiRedissonBlockingQueue;
 import net.susss.timer.sdk.RedisClient;
 import org.apache.commons.lang3.StringUtils;
 import org.redisson.api.RBucket;
+import org.redisson.api.RScoredSortedSet;
+import org.redisson.api.RSortedSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.PreDestroy;
 import java.util.Properties;
+import java.util.SortedSet;
 
 /**
  * Created by Suki Yang on 10/23/2018.
@@ -57,29 +61,31 @@ public class DelayedQueueConsumer extends Thread {
         }
 
         TiRedissonBlockingQueue<String> blockingQueue = redisson.getTiBlockingQueue(Constants.DELAY_QUEUE);
+        RSortedSet<String> timeoutSet = redisson.getSortedSet(Constants.TIMEOUT_SET);
 
         while (true) {
             try {
-                String key = blockingQueue.takeReliably();
-                System.out.println("Receive: " + key);
-                RBucket<String> keyObject = redisson.getBucket(key);
-                if (keyObject.isExists()) {
-                    //Identify as timeout
-                    //TODO any non-blocking callback here
-                    keyObject.getAndDelete();
+                //key: bucket%startTime_uniqueID
+                String key = blockingQueue.checkTimeout();
+                System.out.println("Processed Key: " + key);
+                if (null != key) {
+                    RScoredSortedSet set = redisson.getScoredSortedSet(key.substring(0, key.indexOf(Constants.ESCAPE_BUCKET)));
+                    String element = key.substring(key.indexOf(Constants.ESCAPE_BUCKET) + 1, key.length());
+                    if (!set.contains(element)) {
+                        timeoutSet.remove(key);
+                    }
                 }
             } catch (InterruptedException ex1) {
                 ex1.printStackTrace();
-            } catch (NullPointerException ex2) {
-                System.out.println("key null");
-                ex2.printStackTrace();
-                continue;
-            } finally {
-                this.shutdown();
+//            } catch (NullPointerException ex2) {
+//                System.out.println("key null");
+//                ex2.printStackTrace();
+//                continue;
             }
         }
     }
 
+    @PreDestroy
     public void shutdown() {
         if (this.redisson != null) {
             this.redisson.shutdown();

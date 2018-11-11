@@ -17,11 +17,13 @@ public class MainTest {
 
         Timer timer = (Timer) context.getBean("timer");
 
-        long startTime = new Date().getTime();
+        long unset_startTime = new Date().getTime();
+        timer.set("key1", "value1", unset_startTime, TimeUnit.SECONDS, 10);
+        timer.set("key2", "value2", new Date().getTime(), TimeUnit.SECONDS, 20);
+        timer.set("key3", "value3", unset_startTime, TimeUnit.SECONDS, 30);
+        timer.set("key4", "value4", new Date().getTime(), TimeUnit.SECONDS, 40);
 
-        timer.set("key1", "value1", startTime, TimeUnit.SECONDS, 10);
-        timer.set("key2", "value2", startTime, TimeUnit.SECONDS, 20);
-        timer.set("key3", "value3", startTime, TimeUnit.SECONDS, 30);
-        timer.set("key4", "value4", startTime, TimeUnit.SECONDS, 40);
+        timer.unset("key1", unset_startTime, TimeUnit.SECONDS, 10);
+        timer.unset("key3", unset_startTime, TimeUnit.SECONDS, 30);
     }
 }

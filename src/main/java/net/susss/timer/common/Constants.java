@@ -5,7 +5,7 @@ package net.susss.timer.common;
  */
 public class Constants {
 
-    public static final int MAX_AGENT_SIZE = 10;
+    public static final int MAX_AGENT_SIZE = 50;
 
     public static final String ESCAPE_BUCKET = "%";
 
@@ -21,6 +21,10 @@ public class Constants {
 
     public static final String REDIS_ADDRESS = "address";
 
+    public static final String REDIS_MASTER = "master";
+
+    public static final String REDIS_SLAVE = "slave";
+
     public static final String REDIS_PASSWORD = "password";
 
     public static final String REDIS_DATABASE = "database";
@@ -35,9 +39,5 @@ public class Constants {
 
     public static final String REDIS_MODE_SINGLE = "single";
 
-    public static final String REDIS_MODE_POOL = "pool";
-
-    public static final String REDIS_MODE_CLUSTER = "cluster";
-
-    public static final String REDIS_MODE_SENTINEL = "sentinel";
+    public static final String REDIS_MODE_MASTER_SLAVE = "master";
 }

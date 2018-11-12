@@ -9,14 +9,23 @@
 
     <context:annotation-config />
 
-    <bean id="timer" class="net.susss.timer.sdk.Main">
+    <bean id="timer" class="net.susss.timer.sdk.Timer">
         <property name="address" value="127.0.0.1:6379" />
         <property name="password" value="" />
         <property name="database" value="0" />
         <property name="timeout" value="30000" />
         <property name="mode" value="single" />
-        <property name="poolSize" value="1" />
-        <property name="poolMinIdleSize" value="1" />
+        <property name="poolSize" value="10" />
+        <property name="poolMinIdleSize" value="5" />
     </bean>
+
+    <!--<bean id="timer-master" class="net.susss.timer.sdk.Main">-->
+        <!--<property name="master" value="127.0.0.1:6379" />-->
+        <!--<property name="slave" value="127.0.0.1:6379" />-->
+        <!--<property name="password" value="" />-->
+        <!--<property name="database" value="0" />-->
+        <!--<property name="timeout" value="30000" />-->
+        <!--<property name="mode" value="master" />-->
+    <!--</bean>-->
 
 </beans>

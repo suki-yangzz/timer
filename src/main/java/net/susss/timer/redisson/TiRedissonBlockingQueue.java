@@ -27,15 +27,15 @@ public class TiRedissonBlockingQueue<V> extends RedissonBlockingQueue<V> {
         return this.commandExecutor.evalWriteAsync(this.getName(), this.codec, RedisCommands.EVAL_OBJECT,
                 "local v = redis.call('rpop', KEYS[1]); " +
                     "if v ~= false then " +
-                        "local bucket = string.match(v, '(.+)%%'); " +
-                        "local key = string.match(v, '%%(.+)'); " +
-                        "local score = redis.call('zscore', bucket, \"1541926861381_key2\"); " +
-                        "return score; " +
-//                        "if score ~= false then " +
-//                            "local startTime = string.match(v, '%%(.+)_'); " +
-//                            "redis.call('zadd', KEYS[2], startTime, v); " +
-//                            "return v; " +
-//                        "end; " +
+                        "local bucket = string.match(v, '\"(.+)%%'); " +
+                        "local key = string.match(v, '%%(.+)\"'); " +
+                        "local score = redis.call('zscore', bucket, '\\\"'..key..'\\\"'); " +
+                        "if score ~= false then " +
+                            "local startTime = string.match(v, '%%(.+)_'); " +
+                            "redis.call('zadd', KEYS[2], startTime, v); " + //identify a timeout, then add into timeout_set
+                            "redis.call('zrem', bucket, '\\\"'..key..'\\\"')" + //remove element from related bucket
+                            "return v; " +
+                        "end; " +
                     "end; " +
                     "return nil; ",
                 Arrays.<Object>asList(Constants.DELAY_QUEUE, Constants.TIMEOUT_SET));

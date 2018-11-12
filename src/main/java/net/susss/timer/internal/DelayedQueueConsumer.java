@@ -27,8 +27,6 @@ public class DelayedQueueConsumer extends Thread {
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(DelayedQueueConsumer.class);
 
-    private Thread t;
-
     private Properties properties;
 
     TiRedissonClient redisson;
@@ -46,11 +44,7 @@ public class DelayedQueueConsumer extends Thread {
             LOGGER.info("Running ");
         }
 
-        String mode = properties.getProperty(Constants.REDIS_MODE);
-        if (StringUtils.isBlank(mode)) {
-            mode = Constants.REDIS_MODE_SINGLE;
-        }
-        switch (mode) {
+        switch (properties.getProperty(Constants.REDIS_MODE)) {
             case Constants.REDIS_MODE_SINGLE:
                 redisson = new RedisClient()
                         .redissonSingle(properties.getProperty(Constants.REDIS_ADDRESS),
@@ -58,29 +52,35 @@ public class DelayedQueueConsumer extends Thread {
                                 Integer.valueOf(properties.getProperty(Constants.REDIS_CLIENT_POOL_SIZE)),
                                 Integer.valueOf(properties.getProperty(Constants.REDIS_CLIENT_MIN_IDLE_SIZE)),
                                 properties.getProperty(Constants.REDIS_PASSWORD));
+                break;
+            case Constants.REDIS_MODE_MASTER_SLAVE:
+                redisson = new RedisClient()
+                        .redissonMasterSlave(properties.getProperty(Constants.REDIS_MASTER),
+                                properties.getProperty(Constants.REDIS_SLAVE),
+                                Integer.valueOf(properties.getProperty(Constants.REDIS_TIMEOUT)),
+                                properties.getProperty(Constants.REDIS_PASSWORD));
+                break;
+            default:
+                redisson = new RedisClient()
+                        .redissonSingle(properties.getProperty(Constants.REDIS_ADDRESS),
+                                Integer.valueOf(properties.getProperty(Constants.REDIS_TIMEOUT)),
+                                Integer.valueOf(properties.getProperty(Constants.REDIS_CLIENT_POOL_SIZE)),
+                                Integer.valueOf(properties.getProperty(Constants.REDIS_CLIENT_MIN_IDLE_SIZE)),
+                                properties.getProperty(Constants.REDIS_PASSWORD));
+                break;
         }
 
         TiRedissonBlockingQueue<String> blockingQueue = redisson.getTiBlockingQueue(Constants.DELAY_QUEUE);
-        RSortedSet<String> timeoutSet = redisson.getSortedSet(Constants.TIMEOUT_SET);
 
         while (true) {
             try {
                 //key: bucket%startTime_uniqueID
                 String key = blockingQueue.checkTimeout();
-                System.out.println("Processed Key: " + key);
                 if (null != key) {
-                    RScoredSortedSet set = redisson.getScoredSortedSet(key.substring(0, key.indexOf(Constants.ESCAPE_BUCKET)));
-                    String element = key.substring(key.indexOf(Constants.ESCAPE_BUCKET) + 1, key.length());
-                    if (!set.contains(element)) {
-                        timeoutSet.remove(key);
-                    }
+                    LOGGER.info("Agent identified a timeout Key as " + key);
                 }
             } catch (InterruptedException ex1) {
-                ex1.printStackTrace();
-//            } catch (NullPointerException ex2) {
-//                System.out.println("key null");
-//                ex2.printStackTrace();
-//                continue;
+                LOGGER.error("Agent caught error as", ex1.getMessage());
             }
         }
     }

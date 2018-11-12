@@ -8,14 +8,24 @@
 	http://www.springframework.org/schema/context/spring-context-2.5.xsd">
 
     <context:annotation-config />
+    <context:component-scan base-package="net.susss.timer" />
+
+    <bean id="timer" class="net.susss.timer.sdk.Timer">
+        <property name="address" value="127.0.0.1:6379" />
+        <property name="password" value="" />
+        <property name="database" value="0" />
+        <property name="timeout" value="30000" />
+        <property name="mode" value="single" />
+        <property name="poolSize" value="1" />
+        <property name="poolMinIdleSize" value="1" />
+    </bean>
 
     <bean id ="taskExecutor" class ="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor" >
-        <property name="threadNamePrefix" value="Timer-" />
-        <property name="corePoolSize" value ="2" /> <!--核心线程数 -->
-        <!--<property name="keepAliveSeconds" value ="3000" /> &lt;!&ndash; 某线程空闲超过这个时间，就回收该线程 &ndash;&gt;-->
-        <property name="maxPoolSize" value ="5" />     <!--最大线程数 -->
-        <property name="queueCapacity" value ="0" />  <!-- 队列大小 -->
-        <property name="WaitForTasksToCompleteOnShutdown" value="true" />
+        <property name ="corePoolSize" value ="2" /> <!--核心线程数 -->
+        <!--<property name ="keepAliveSeconds" value ="3000" /> &lt;!&ndash; 某线程空闲超过这个时间，就回收该线程 &ndash;&gt;-->
+        <property name ="maxPoolSize" value ="5" />     <!--最大线程数 -->
+        <property name ="queueCapacity" value ="1000" />  <!-- 队列大小 -->
+        <property name ="WaitForTasksToCompleteOnShutdown" value="true" />
         <property name= "rejectedExecutionHandler" >
             <!-- AbortPolicy:直接抛出java.util.concurrent.RejectedExecutionException异常 -->
             <!-- CallerRunsPolicy:主线程直接执行该任务，执行完之后尝试添加下一个任务到线程池中，可以有效降低向线程池内添加任务的速度 -->
@@ -34,13 +44,4 @@
         <property name="poolSize" value="2" />
         <property name="poolMinIdleSize" value="1" />
     </bean>
-
-    <!--<bean id="agent-master" class="net.susss.timer.sdk.Agent">-->
-        <!--<property name="master" value="127.0.0.1:6379" />-->
-        <!--<property name="slave" value="127.0.0.1:6379" />-->
-        <!--<property name="password" value="" />-->
-        <!--<property name="database" value="0" />-->
-        <!--<property name="timeout" value="30000" />-->
-        <!--<property name="mode" value="master" />-->
-    <!--</bean>-->
 </beans>
